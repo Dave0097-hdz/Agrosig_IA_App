@@ -26,5 +26,5 @@ class Environment {
   static const String weatherApiKey = '8a308194915c5e323ce60f1f4d9f2508';
   static const googleApi = 'AIzaSyA7-gQBW41OcosCQswZJrfFAGuUXFXMrdw';
 
-  static String vercelUrl = 'https://agrosig-frontend.vercel.app';
+  static String vercelUrl = 'https://soluciones-agrotech.vercel.app';
 }
