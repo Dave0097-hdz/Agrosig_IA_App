@@ -1,0 +1,113 @@
+{
+  "project_info": {
+    "project_number": "727117646698",
+    "project_id": "agrosig-ia",
+    "storage_bucket": "agrosig-ia.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727117646698:android:4187a454d61db147d4f313",
+        "android_client_info": {
+          "package_name": "com.agrosig.agrosig"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "727117646698-fo9an5p4q13hfo7bernbqnr2qt3o8i7n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agrosig.agrosig",
+            "certificate_hash": "f53d4e4bf941846d6adcfe73ef0a3b1ab5b14369"
+          }
+        },
+        {
+          "client_id": "727117646698-1elfu0ptolu7o72p5kmeqpd0ilmdgd0g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjX4fNnCy9xwszcpr7Lp40pzTGR3qC8_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "727117646698-1elfu0ptolu7o72p5kmeqpd0ilmdgd0g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727117646698:android:afa4d9ca078f8db7d4f313",
+        "android_client_info": {
+          "package_name": "com.agrosig.app.agrosig_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "727117646698-fhtjshg26uiv1ekftpfbo4i8lp85795l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agrosig.app.agrosig_app",
+            "certificate_hash": "f53d4e4bf941846d6adcfe73ef0a3b1ab5b14369"
+          }
+        },
+        {
+          "client_id": "727117646698-1elfu0ptolu7o72p5kmeqpd0ilmdgd0g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjX4fNnCy9xwszcpr7Lp40pzTGR3qC8_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "727117646698-1elfu0ptolu7o72p5kmeqpd0ilmdgd0g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:727117646698:android:bdb35ae82b27ec3fd4f313",
+        "android_client_info": {
+          "package_name": "com.example.agrosig_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "727117646698-1elfu0ptolu7o72p5kmeqpd0ilmdgd0g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjX4fNnCy9xwszcpr7Lp40pzTGR3qC8_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "727117646698-1elfu0ptolu7o72p5kmeqpd0ilmdgd0g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
