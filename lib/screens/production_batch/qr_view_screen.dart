@@ -25,7 +25,7 @@ class QRViewScreen extends StatefulWidget {
 class _QRViewScreenState extends State<QRViewScreen>
     with WidgetsBindingObserver {
   final ProductionBatchService _productionBatchService =
-      ProductionBatchService();
+  ProductionBatchService();
   String? _qrCode;
   bool _isLoading = true;
   bool _hasActivities = false;
@@ -54,7 +54,6 @@ class _QRViewScreenState extends State<QRViewScreen>
     super.dispose();
   }
 
-  // Controlar el estado de la app (foreground/background)
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -64,14 +63,12 @@ class _QRViewScreenState extends State<QRViewScreen>
           state == AppLifecycleState.inactive;
     });
 
-    // Cuando la app vuelve al foreground, recargar datos si es necesario
     if (state == AppLifecycleState.resumed && _isAppInBackground) {
       _checkForUpdates();
     }
   }
 
   Future<void> _checkForUpdates() async {
-    // Recargar actividades para ver si hay cambios
     await _loadActivitiesInBackground();
   }
 
@@ -83,10 +80,7 @@ class _QRViewScreenState extends State<QRViewScreen>
     });
 
     try {
-      // Cargar QR primero - es lo más importante
       await _loadQRData();
-
-      // Luego cargar actividades
       await _loadActivitiesInBackground();
     } catch (e) {
       setState(() {
@@ -101,7 +95,7 @@ class _QRViewScreenState extends State<QRViewScreen>
       print('🔄 Cargando QR para productionId: ${widget.productionId}');
 
       final response =
-          await _productionBatchService.getQRCodeData(widget.productionId);
+      await _productionBatchService.getQRCodeData(widget.productionId);
 
       if (response.success) {
         setState(() {
@@ -142,7 +136,7 @@ class _QRViewScreenState extends State<QRViewScreen>
 
     try {
       final response =
-          await _productionBatchService.getBatchActivities(widget.productionId);
+      await _productionBatchService.getBatchActivities(widget.productionId);
 
       if (response.success) {
         setState(() {
@@ -200,10 +194,9 @@ class _QRViewScreenState extends State<QRViewScreen>
 
     try {
       final response =
-          await _productionBatchService.refreshQRCode(widget.productionId);
+      await _productionBatchService.refreshQRCode(widget.productionId);
 
       if (response.success) {
-        // Recargar el QR
         await _loadQRData();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -242,29 +235,8 @@ class _QRViewScreenState extends State<QRViewScreen>
             AsociarActividadesScreen(productionId: widget.productionId),
       ),
     ).then((_) {
-      // Recargar actividades después de asociar
       _loadActivitiesInBackground();
     });
-  }
-
-  Future<void> _openTraceabilityUrl() async {
-    if (_traceabilityUrl.isEmpty) return;
-
-    try {
-      final Uri url = Uri.parse(_traceabilityUrl);
-
-      if (await canLaunchUrl(url)) {
-        await launchUrl(
-          url,
-          mode: LaunchMode
-              .externalApplication,
-        );
-      } else {
-        _showErrorSnackBar('No se pudo abrir la URL: $_traceabilityUrl');
-      }
-    } catch (e) {
-      _showErrorSnackBar('Error al abrir URL: $e');
-    }
   }
 
   Future<void> _copyTraceabilityUrl() async {
@@ -274,7 +246,6 @@ class _QRViewScreenState extends State<QRViewScreen>
     }
   }
 
-  // Métodos helper para snacks
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -295,7 +266,139 @@ class _QRViewScreenState extends State<QRViewScreen>
     );
   }
 
-  // Widget QR mejorado
+  // MEJORA: Widget simplificado sin botón de abrir navegador
+  Widget _buildUrlDisplay() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmallScreen = constraints.maxWidth < 400;
+
+        return Container(
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.blue.shade100),
+          ),
+          child: Column(
+            children: [
+              // Título responsive
+              Text(
+                'URL de trazabilidad:',
+                style: TextStyle(
+                  fontSize: isSmallScreen ? 13 : 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blue.shade800,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: isSmallScreen ? 8 : 12),
+
+              // Contenedor de URL responsive
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(isSmallScreen ? 8 : 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // URL texto con tamaño responsive
+                    SelectableText(
+                      _traceabilityUrl,
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 10 : 12,
+                        color: Colors.blue.shade700,
+                        fontFamily: 'RobotoMono',
+                        height: 1.4,
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+
+                    // Información adicional responsive
+                    SizedBox(height: isSmallScreen ? 6 : 8),
+                    Text(
+                      'Copia esta URL y ábrela en tu navegador',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 9 : 10,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: isSmallScreen ? 12 : 16),
+
+              // MEJORA: Solo botón de copiar URL, centrado y responsive
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _copyTraceabilityUrl,
+                  icon: Icon(
+                    Icons.copy,
+                    size: isSmallScreen ? 16 : 18,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    'Copiar URL al Portapapeles',
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 13 : 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      vertical: isSmallScreen ? 12 : 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Información adicional responsive
+              SizedBox(height: isSmallScreen ? 8 : 8),
+              Container(
+                padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                        Icons.info_outline,
+                        size: isSmallScreen ? 12 : 14,
+                        color: Colors.blue.shade700
+                    ),
+                    SizedBox(width: isSmallScreen ? 4 : 6),
+                    Expanded(
+                      child: Text(
+                        'Pega la URL en cualquier navegador para ver la trazabilidad',
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 9 : 10,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildQRImage() {
     if (_isGeneratingQR) {
       return Container(
@@ -372,7 +475,6 @@ class _QRViewScreenState extends State<QRViewScreen>
     );
   }
 
-  // Widget para mostrar errores de actividades
   Widget _buildActivitiesError() {
     if (_activitiesError.isNotEmpty) {
       return Container(
@@ -440,7 +542,7 @@ class _QRViewScreenState extends State<QRViewScreen>
               onPressed: _navigateToAssociateActivities,
               icon: Icon(Icons.add_task, size: 20),
               label:
-                  Text('Asociar Actividades', style: TextStyle(fontSize: 16)),
+              Text('Asociar Actividades', style: TextStyle(fontSize: 16)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
@@ -457,226 +559,169 @@ class _QRViewScreenState extends State<QRViewScreen>
   }
 
   Widget _buildQRCodeCard() {
-    return Card(
-      elevation: 4,
-      margin: EdgeInsets.symmetric(vertical: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            // Header con información del lote
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    widget.batchName,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade800,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.assignment, color: Colors.green, size: 16),
-                      SizedBox(width: 4),
-                      Text(
-                        '$_activityCount actividad(es) asociada(s)',
-                        style: TextStyle(
-                          color: Colors.green.shade700,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmallScreen = constraints.maxWidth < 400;
 
-            SizedBox(height: 24),
-
-            // QR Code
-            Column(
+        return Card(
+          elevation: 4,
+          margin: EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: EdgeInsets.all(isSmallScreen ? 16 : 24),
+            child: Column(
               children: [
-                Text(
-                  'Código QR de Trazabilidad',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                // Header con información del lote
+                Container(
+                  padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                SizedBox(height: 16),
-                _buildQRImage(),
-                SizedBox(height: 16),
-                Text(
-                  'Escanea este código QR para ver la trazabilidad completa',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-
-            // URL de trazabilidad
-            if (_traceabilityUrl.isNotEmpty) ...[
-              SizedBox(height: 24),
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade100),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'URL de trazabilidad:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade800,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
-                      ),
-                      child: SelectableText(
-                        _traceabilityUrl,
+                  child: Column(
+                    children: [
+                      Text(
+                        widget.batchName,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade700,
-                          fontFamily: 'Monospace',
+                          fontSize: isSmallScreen ? 18 : 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade800,
                         ),
                         textAlign: TextAlign.center,
                       ),
+                      SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.assignment, color: Colors.green, size: 16),
+                          SizedBox(width: 4),
+                          Text(
+                            '$_activityCount actividad(es) asociada(s)',
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w500,
+                              fontSize: isSmallScreen ? 12 : 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: isSmallScreen ? 16 : 24),
+
+                // QR Code
+                Column(
+                  children: [
+                    Text(
+                      'Código QR de Trazabilidad',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 14 : 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
-                    SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _copyTraceabilityUrl,
-                            icon: Icon(Icons.copy, size: 18),
-                            label: Text('Copiar URL'),
-                            style: OutlinedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _openTraceabilityUrl,
-                            icon: Icon(Icons.open_in_new, size: 18),
-                            label: Text('Abrir en Navegador'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    SizedBox(height: isSmallScreen ? 12 : 16),
+                    _buildQRImage(),
+                    SizedBox(height: isSmallScreen ? 12 : 16),
+                    Text(
+                      'Escanea este código QR para ver la trazabilidad completa',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 12 : 13,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ],
-        ),
-      ),
+
+                if (_traceabilityUrl.isNotEmpty) ...[
+                  SizedBox(height: isSmallScreen ? 16 : 24),
+                  _buildUrlDisplay(),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildActionButtons() {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _navigateToAssociateActivities,
-              icon: Icon(Icons.edit_note),
-              label: Text(_hasActivities
-                  ? 'Gestionar Actividades'
-                  : 'Asociar Actividades'),
-              style: OutlinedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 14),
-                side: BorderSide(color: Color(0xFF6A38C2)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _isGeneratingQR ? null : _forceRefreshQR,
-              icon: _isGeneratingQR
-                  ? SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Icon(Icons.refresh, color: Colors.white),
-              label: Text(
-                _isGeneratingQR ? 'Generando...' : 'Regenerar QR',
-                style: TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF6A38C2),
-                padding: EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmallScreen = constraints.maxWidth < 400;
 
-  // Método para debugging
-  void checkCurrentState() {
-    print('=== ESTADO ACTUAL ===');
-    print('QR Code: ${_qrCode != null ? "Cargado" : "Nulo"}');
-    print('Unique Code: $_uniqueCode');
-    print('Traceability URL: $_traceabilityUrl');
-    print('Actividades: $_activityCount');
-    print('Lista de actividades: ${_activities.length}');
-    print('Has Activities: $_hasActivities');
-    print('Activities Loading: $_activitiesLoading');
-    print('Activities Error: $_activitiesError');
-    print('=====================');
+        return Container(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _navigateToAssociateActivities,
+                  icon: Icon(
+                      Icons.edit_note,
+                      size: isSmallScreen ? 18 : 20
+                  ),
+                  label: Text(
+                    _hasActivities
+                        ? 'Gestionar Actividades'
+                        : 'Asociar Actividades',
+                    style: TextStyle(fontSize: isSmallScreen ? 13 : 14),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(
+                      vertical: isSmallScreen ? 12 : 14,
+                    ),
+                    side: BorderSide(color: Color(0xFF6A38C2)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: isSmallScreen ? 8 : 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isGeneratingQR ? null : _forceRefreshQR,
+                  icon: _isGeneratingQR
+                      ? SizedBox(
+                    height: isSmallScreen ? 16 : 18,
+                    width: isSmallScreen ? 16 : 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : Icon(
+                    Icons.refresh,
+                    color: Colors.white,
+                    size: isSmallScreen ? 18 : 20,
+                  ),
+                  label: Text(
+                    _isGeneratingQR ? 'Generando...' : 'Regenerar QR',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isSmallScreen ? 13 : 14,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF6A38C2),
+                    padding: EdgeInsets.symmetric(
+                      vertical: isSmallScreen ? 12 : 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -703,102 +748,101 @@ class _QRViewScreenState extends State<QRViewScreen>
       ),
       body: _isLoading
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFF6A38C2)),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Cargando código QR...',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor:
+              AlwaysStoppedAnimation<Color>(Color(0xFF6A38C2)),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Cargando código QR...',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 16,
               ),
-            )
+            ),
+          ],
+        ),
+      )
           : _errorMessage.isNotEmpty
-              ? Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error_outline, color: Colors.red, size: 72),
-                        SizedBox(height: 20),
-                        Text(
-                          'Error al cargar',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          _errorMessage,
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                            fontSize: 16,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: _loadAllData,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF6A38C2),
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: Text('Reintentar'),
-                        ),
-                      ],
-                    ),
+          ? Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 72),
+              SizedBox(height: 20),
+              Text(
+                'Error al cargar',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 12),
+              Text(
+                _errorMessage,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _loadAllData,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF6A38C2),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                      horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                )
-              : SingleChildScrollView(
-                  physics: BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: EdgeInsets.all(20.0),
+                ),
+                child: Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      )
+          : SingleChildScrollView(
+        physics: BouncingScrollPhysics(),
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildActivitiesError(),
+
+              if (_activitiesLoading)
+                Container(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Mostrar error de actividades si existe
-                        _buildActivitiesError(),
-
-                        if (_activitiesLoading)
-                          Container(
-                            padding: EdgeInsets.all(16),
-                            child: Center(
-                              child: Column(
-                                children: [
-                                  CircularProgressIndicator(),
-                                  SizedBox(height: 8),
-                                  Text('Cargando actividades...'),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                        if (!_hasActivities && _qrCode == null)
-                          _buildNoActivitiesCard(),
-                        if (_qrCode != null) _buildQRCodeCard(),
-                        SizedBox(height: 20),
-                        _buildActionButtons(),
-                        SizedBox(height: 20),
+                        CircularProgressIndicator(),
+                        SizedBox(height: 8),
+                        Text('Cargando actividades...'),
                       ],
                     ),
                   ),
                 ),
+
+              if (!_hasActivities && _qrCode == null)
+                _buildNoActivitiesCard(),
+              if (_qrCode != null) _buildQRCodeCard(),
+              SizedBox(height: 20),
+              _buildActionButtons(),
+              SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:agrosig_app/components/toast/toats.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -88,13 +89,7 @@ class _HelpScreenState extends State<HelpScreen> {
       final response = await _commentServices.createComment(_descController.text.trim());
 
       if (response.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Comentario enviado correctamente."),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.green,
-          ),
-        );
+        showToast(message: 'Comentario Enviado Correctamente');
         _descController.clear();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -120,35 +115,46 @@ class _HelpScreenState extends State<HelpScreen> {
     }
   }
 
-  // Función para abrir URLs
-  Future<void> _launchURL(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
+  // MÉTODO LEGACY QUE ESTÁ FUNCIONANDO
+  Future<void> _launchUrlSimple(String url) async {
+    try {
+      print('Intentando abrir: $url');
+      await launch(url, forceSafariVC: false, forceWebView: false);
+      print('URL abierta exitosamente con método legacy');
+    } catch (e) {
+      print('Error al abrir URL: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No se pudo abrir: $url'),
+          content: Text('No se pudo abrir la URL: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-  // Función para abrir Google Maps
+  // Método específico para correo electrónico
+  Future<void> _openEmail() async {
+    final String emailUrl = 'mailto:soporteayu@gmail.com?subject=Consulta/Soporte - Ayuda en la App&body=Hola, necesito ayuda con...';
+    await _launchUrlSimple(emailUrl);
+  }
+
+  // Métodos específicos para redes sociales
+  void _launchGithub() => _launchUrlSimple('https://github.com/Dave0097-hdz');
+  void _launchInstagram() => _launchUrlSimple('https://instagram.com');
+  void _launchFacebook() => _launchUrlSimple('https://facebook.com');
+  void _launchTwitter() => _launchUrlSimple('https://twitter.com');
+
+  // Método para Google Maps
   Future<void> _openMaps() async {
-    final Uri uri = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=${_center.latitude},${_center.longitude}'
-    );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo abrir Google Maps'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    // Primero intentar con aplicación nativa de Google Maps
+    final String nativeUrl = 'comgooglemaps://?q=${_center.latitude},${_center.longitude}';
+    final String webUrl = 'https://www.google.com/maps/search/?api=1&query=${_center.latitude},${_center.longitude}';
+
+    try {
+      await _launchUrlSimple(nativeUrl);
+    } catch (e) {
+      // Fallback a Google Maps web
+      await _launchUrlSimple(webUrl);
     }
   }
 
@@ -196,224 +202,391 @@ class _HelpScreenState extends State<HelpScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Tarjeta de información personal
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Tu Información",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildInfoRow("Nombre", _nameController.text),
-                    const SizedBox(height: 12),
-                    _buildInfoRow("Correo", _emailController.text),
-                  ],
-                ),
-              ),
-            ),
+            _buildPersonalInfoCard(),
 
             const SizedBox(height: 20),
 
             // Tarjeta de formulario de ayuda
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "¿En qué podemos ayudarte?",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Describe el problema o sugerencia que tienes",
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildMessageField(),
-                    const SizedBox(height: 20),
-                    _buildSendButton(),
-                  ],
-                ),
-              ),
-            ),
+            _buildHelpFormCard(),
 
             const SizedBox(height: 20),
 
             // Mapa de ubicación
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.location_on, color: Color(0xFF6D927F), size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          "Nuestra Ubicación",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2C3E50),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      height: 150,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: GoogleMap(
-                          onMapCreated: (controller) {
-                            setState(() {
-                              _mapController = controller;
-                            });
-                          },
-                          initialCameraPosition: const CameraPosition(
-                            target: _center,
-                            zoom: 15,
-                          ),
-                          markers: _markers,
-                          zoomControlsEnabled: false,
-                          scrollGesturesEnabled: true,
-                          zoomGesturesEnabled: true,
-                          myLocationButtonEnabled: false,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: _openMaps,
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Tercera Nte. Pte., San Antonio, 29740 Rayón, Chis.",
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontSize: 12,
-                              decoration: TextDecoration.underline,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(width: 4),
-                          Icon(Icons.open_in_new, size: 14, color: Colors.blue),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _buildLocationCard(),
 
             const SizedBox(height: 20),
 
-            // Tarjeta de contacto y redes sociales
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Contáctanos",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2C3E50),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Correo electrónico
-                    _buildContactItem(
-                      Icons.email_outlined,
-                      "Correo Electrónico",
-                      "soporteayu@gmail.com",
-                          () => _launchURL('mailto:soporteayu@gmail.com'),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Redes Sociales
-                    const Text(
-                      "Síguenos en:",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildSocialIcon(
-                          FontAwesomeIcons.github,
-                          "GitHub",
-                              () => _launchURL('https://github.com/Dave0097-hdz'),
-                        ),
-                        _buildSocialIcon(
-                          FontAwesomeIcons.instagram,
-                          "Instagram",
-                              () => _launchURL('https://instagram.com'),
-                        ),
-                        _buildSocialIcon(
-                          FontAwesomeIcons.facebook,
-                          "Facebook",
-                              () => _launchURL('https://facebook.com'),
-                        ),
-                        _buildSocialIcon(
-                          FontAwesomeIcons.twitter,
-                          "Twitter",
-                              () => _launchURL('https://twitter.com'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Tarjeta de contacto simplificada
+            _buildContactCard(),
 
             const SizedBox(height: 20),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoCard() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      shadowColor: Colors.black12,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6D927F).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person_outline, color: Color(0xFF6D927F), size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  "Tu Información",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2C3E50),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildInfoRow("Nombre", _nameController.text),
+            const SizedBox(height: 12),
+            _buildInfoRow("Correo", _emailController.text),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHelpFormCard() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      shadowColor: Colors.black12,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6D927F).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.help_outline, color: Color(0xFF6D927F), size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  "¿En qué podemos ayudarte?",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2C3E50),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Describe el problema o sugerencia que tienes",
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildMessageField(),
+            const SizedBox(height: 20),
+            _buildSendButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationCard() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      shadowColor: Colors.black12,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.location_on, color: Color(0xFF6D927F), size: 20),
+                SizedBox(width: 8),
+                Text(
+                  "Nuestra Ubicación",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2C3E50),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 180,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: GoogleMap(
+                  onMapCreated: (controller) {
+                    setState(() {
+                      _mapController = controller;
+                    });
+                  },
+                  initialCameraPosition: const CameraPosition(
+                    target: _center,
+                    zoom: 15,
+                  ),
+                  markers: _markers,
+                  zoomControlsEnabled: false,
+                  scrollGesturesEnabled: true,
+                  zoomGesturesEnabled: true,
+                  myLocationButtonEnabled: false,
+                  mapToolbarEnabled: false,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _openMaps,
+                icon: const Icon(Icons.open_in_new, size: 16),
+                label: const Text(
+                  "Abrir en Google Maps",
+                  style: TextStyle(fontSize: 14),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  side: BorderSide(color: Colors.blue.shade400),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Tercera Nte. Pte., San Antonio, 29740 Rayón, Chis.",
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Tarjeta de contacto simplificada
+  Widget _buildContactCard() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      shadowColor: Colors.black12,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6D927F).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.contact_support, color: Color(0xFF6D927F), size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  "Contáctanos",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2C3E50),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Correo electrónico simplificado
+            _buildContactItem(
+              Icons.email_outlined,
+              "Correo Electrónico",
+              "soporteayu@gmail.com",
+              _openEmail,
+            ),
+            const SizedBox(height: 16),
+
+            // Redes sociales simplificadas
+            const Text(
+              "Síguenos en redes sociales:",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildSocialMediaSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget de contacto simplificado
+  Widget _buildContactItem(IconData icon, String title, String subtitle, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6D927F).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: const Color(0xFF6D927F), size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C3E50),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Sección de redes sociales simplificada
+  Widget _buildSocialMediaSection() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isSmallScreen = constraints.maxWidth < 400;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildSocialIcon(
+              FontAwesomeIcons.github,
+              "GitHub",
+              _launchGithub,
+              isSmallScreen,
+            ),
+            _buildSocialIcon(
+              FontAwesomeIcons.instagram,
+              "Instagram",
+              _launchInstagram,
+              isSmallScreen,
+            ),
+            _buildSocialIcon(
+              FontAwesomeIcons.facebook,
+              "Facebook",
+              _launchFacebook,
+              isSmallScreen,
+            ),
+            _buildSocialIcon(
+              FontAwesomeIcons.twitter,
+              "Twitter",
+              _launchTwitter,
+              isSmallScreen,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Ícono social simplificado
+  Widget _buildSocialIcon(IconData icon, String tooltip, VoidCallback onTap, bool isSmallScreen) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Tooltip(
+        message: tooltip,
+        child: Container(
+          padding: EdgeInsets.all(isSmallScreen ? 12 : 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FA),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade300),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            icon,
+            size: isSmallScreen ? 20 : 22,
+            color: const Color(0xFF6D927F),
+          ),
         ),
       ),
     );
@@ -541,80 +714,6 @@ class _HelpScreenState extends State<HelpScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContactItem(IconData icon, String title, String subtitle, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF6D927F).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: const Color(0xFF6D927F), size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2C3E50),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialIcon(IconData icon, String tooltip, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Tooltip(
-        message: tooltip,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8F9FA),
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: const Color(0xFF6D927F),
-          ),
         ),
       ),
     );
