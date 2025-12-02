@@ -97,6 +97,8 @@ dependencies:
   googleapis_auth: ^1.6.0
   generative_ai_dart: ^0.1.2
 
+  markdown_widget: ^2.3.2+8
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

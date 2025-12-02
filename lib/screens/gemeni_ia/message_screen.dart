@@ -23,7 +23,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
   final TextEditingController _controller = TextEditingController();
   final List<Message> _messages = [];
   bool _isLoading = false;
-  bool _isSending = false; // Para controlar el envío único
+  bool _isSending = false;
   File? _selectedImage;
   final ImagePicker _imagePicker = ImagePicker();
 

@@ -50,7 +50,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           },
         );
       } catch (e) {
-        errorMessageSnack(context, 'Error al cambiar contraseña: $e');
+        errorMessageSnack(context, e.toString());
       } finally {
         setState(() {
           _isLoading = false;

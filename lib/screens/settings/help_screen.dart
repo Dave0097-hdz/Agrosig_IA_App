@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../components/helper/error_message.dart';
+import '../../components/helper/modal_success.dart';
 import '../../domain/services/chats_services/chats_services.dart';
 import '../../domain/services/user_services/user_services.dart';
 
@@ -71,13 +73,7 @@ class _HelpScreenState extends State<HelpScreen> {
 
   Future<void> _sendComment() async {
     if (_descController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor, describe tu problema."),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-        ),
-      );
+      errorMessageSnack(context, "Por favor, describe tu problema.");
       return;
     }
 
@@ -89,25 +85,19 @@ class _HelpScreenState extends State<HelpScreen> {
       final response = await _commentServices.createComment(_descController.text.trim());
 
       if (response.success) {
-        showToast(message: 'Comentario Enviado Correctamente');
-        _descController.clear();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error: ${response.message}"),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
-          ),
+        modalSuccess(
+          context,
+          'Comentario Enviado Correctamente',
+              () {
+            Navigator.of(context).pop();
+            _descController.clear();
+          },
         );
+      } else {
+        errorMessageSnack(context, "Error: ${response.message}");
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error al enviar comentario: ${e.toString()}"),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-        ),
-      );
+      errorMessageSnack(context, "Error al enviar comentario: ${e.toString()}");
     } finally {
       setState(() {
         _isLoading = false;
@@ -115,26 +105,32 @@ class _HelpScreenState extends State<HelpScreen> {
     }
   }
 
-  // MÉTODO LEGACY QUE ESTÁ FUNCIONANDO
+  // MÉTODO LEGACY PARA ABRIR URLs
   Future<void> _launchUrlSimple(String url) async {
     try {
       print('Intentando abrir: $url');
-      await launch(url, forceSafariVC: false, forceWebView: false);
-      print('URL abierta exitosamente con método legacy');
+
+      // Usar el método legacy de url_launcher
+      if (await canLaunch(url)) {
+        await launch(
+          url,
+          forceSafariVC: false,
+          forceWebView: false,
+          enableJavaScript: true,
+        );
+        print('URL abierta exitosamente con método legacy');
+      } else {
+        errorMessageSnack(context, 'No se pudo abrir la URL. Asegúrate de tener una aplicación compatible instalada.');
+      }
     } catch (e) {
       print('Error al abrir URL: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No se pudo abrir la URL: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      errorMessageSnack(context, 'No se pudo abrir la URL: $e');
     }
   }
 
   // Método específico para correo electrónico
   Future<void> _openEmail() async {
-    final String emailUrl = 'mailto:soporteayu@gmail.com?subject=Consulta/Soporte - Ayuda en la App&body=Hola, necesito ayuda con...';
+    final String emailUrl = 'mailto:companyagrosig@gmail.com?subject=Consulta/Soporte - Ayuda en la App&body=Hola, necesito ayuda con...';
     await _launchUrlSimple(emailUrl);
   }
 
@@ -144,17 +140,17 @@ class _HelpScreenState extends State<HelpScreen> {
   void _launchFacebook() => _launchUrlSimple('https://facebook.com');
   void _launchTwitter() => _launchUrlSimple('https://twitter.com');
 
-  // Método para Google Maps
+  // Método CORREGIDO para Google Maps
   Future<void> _openMaps() async {
-    // Primero intentar con aplicación nativa de Google Maps
-    final String nativeUrl = 'comgooglemaps://?q=${_center.latitude},${_center.longitude}';
-    final String webUrl = 'https://www.google.com/maps/search/?api=1&query=${_center.latitude},${_center.longitude}';
-
     try {
-      await _launchUrlSimple(nativeUrl);
+      // URL directa de Google Maps - formato simple que funciona en navegador
+      final String mapsUrl = 'https://maps.google.com/?q=${_center.latitude},${_center.longitude}';
+
+      print('Abriendo Google Maps: $mapsUrl');
+      await _launchUrlSimple(mapsUrl);
     } catch (e) {
-      // Fallback a Google Maps web
-      await _launchUrlSimple(webUrl);
+      print('Error al abrir Google Maps: $e');
+      errorMessageSnack(context, 'No se pudo abrir Google Maps. Verifica que tengas una aplicación de mapas instalada.');
     }
   }
 
@@ -448,7 +444,7 @@ class _HelpScreenState extends State<HelpScreen> {
             _buildContactItem(
               Icons.email_outlined,
               "Correo Electrónico",
-              "soporteayu@gmail.com",
+              "companyagrosig@gmail.com",
               _openEmail,
             ),
             const SizedBox(height: 16),

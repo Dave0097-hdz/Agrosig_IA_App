@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:get/get.dart';
 import '../../components/helper/modal_success.dart';
 import '../../components/toast/toats.dart';
 import '../../components/theme/colors_agrosig.dart';
+import '../../components/picker/map_picker.dart';
 import '../../domain/models/plot/plot_model.dart';
+import '../../domain/services/plot_services/geocodig_services.dart';
 import '../../domain/services/plot_services/plot_services.dart';
 import '../home/home_screen.dart';
 
@@ -19,9 +23,18 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
   late TextEditingController _locationController;
   late TextEditingController _areaController;
 
+  // Servicios
+  final PlotServices _plotServices = PlotServices();
+  final GeocodingService _geocodingService = GeocodingService();
+
+  // Variables de estado
   Plot? _userPlot;
+  LatLng? _selectedLocation;
+  String _coordinatesText = 'selecciona en el mapa';
+  String _address = '';
   bool _isLoading = true;
   bool _isEditing = false;
+  bool _isGettingAddress = false;
   String _errorMessage = '';
 
   @override
@@ -31,6 +44,7 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
     _locationController = TextEditingController();
     _areaController = TextEditingController();
     _loadUserPlot();
+    _checkLocationPermission();
   }
 
   @override
@@ -41,6 +55,22 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
     super.dispose();
   }
 
+  Future<void> _checkLocationPermission() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      showToast(message: 'Por favor, activa el servicio de ubicación');
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        showToast(message: 'Se necesitan permisos de ubicación');
+      }
+    }
+  }
+
   Future<void> _loadUserPlot() async {
     try {
       setState(() {
@@ -48,7 +78,7 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
         _errorMessage = '';
       });
 
-      final plot = await plotServices.getUbicationPlot();
+      final plot = await _plotServices.getUbicationPlot();
 
       print('Parcela cargada: $plot');
 
@@ -58,6 +88,29 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
           _plotNameController.text = plot.plot_name;
           _locationController.text = plot.location;
           _areaController.text = plot.area.toString();
+
+          // IMPORTANTE: Validar y corregir coordenadas si es necesario
+          double lat = plot.lat;
+          double long = plot.long;
+
+          // Verificar si las coordenadas están intercambiadas
+          if (lat < -90 || lat > 90) {
+            // Si lat está fuera de rango, probablemente esté intercambiada con long
+            print('ADVERTENCIA: Latitud fuera de rango ($lat), intercambiando coordenadas');
+            double temp = lat;
+            lat = long;
+            long = temp;
+          }
+
+          // Validar rango final
+          if (lat >= -90 && lat <= 90 && long >= -180 && long <= 180) {
+            _selectedLocation = LatLng(lat, long);
+            _coordinatesText = '${lat.toStringAsFixed(6)}, ${long.toStringAsFixed(6)}';
+            _address = plot.location;
+          } else {
+            print('Coordenadas inválidas después de la corrección: lat=$lat, long=$long');
+          }
+
           print('Controladores configurados con: ${plot.plot_name}, ${plot.location}, ${plot.area}');
         } else {
           _errorMessage = 'No se encontró información de la parcela';
@@ -74,6 +127,62 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
     }
   }
 
+  Future<void> _selectLocation() async {
+    try {
+      final Position currentPosition = await Geolocator.getCurrentPosition();
+
+      // Usar ubicación actual o la seleccionada previamente
+      LatLng initialPosition = _selectedLocation ??
+          LatLng(currentPosition.latitude, currentPosition.longitude);
+
+      final LatLng? selected = await Get.to(
+            () => MapPickerScreen(
+          initialPosition: initialPosition,
+        ),
+      );
+
+      if (selected != null) {
+        setState(() {
+          _selectedLocation = selected;
+          _coordinatesText = '${selected.latitude.toStringAsFixed(6)}, ${selected.longitude.toStringAsFixed(6)}';
+          _isGettingAddress = true;
+        });
+
+        await _getAddressFromCoordinates(selected);
+      }
+    } catch (e) {
+      print('Error seleccionando ubicación: $e');
+      showToast(message: 'Error obteniendo ubicación: ${e.toString()}');
+      setState(() {
+        _isGettingAddress = false;
+      });
+    }
+  }
+
+  Future<void> _getAddressFromCoordinates(LatLng coordinates) async {
+    try {
+      final address = await GeocodingService.getAddressFromLatLng(
+        coordinates.latitude,
+        coordinates.longitude,
+      );
+
+      setState(() {
+        _address = address;
+        _locationController.text = address;
+        _isGettingAddress = false;
+      });
+
+    } catch (e) {
+      print('Error obteniendo dirección: $e');
+      setState(() {
+        _address = 'No se pudo obtener la dirección';
+        _locationController.text = '';
+        _isGettingAddress = false;
+      });
+      showToast(message: 'No se pudo obtener la dirección. Por favor, ingrésala manualmente.');
+    }
+  }
+
   Future<void> _updatePlot() async {
     if (_userPlot == null) {
       showToast(message: 'No hay datos de parcela para actualizar');
@@ -84,6 +193,22 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
         _locationController.text.isEmpty ||
         _areaController.text.isEmpty) {
       showToast(message: 'Por favor completa todos los campos');
+      return;
+    }
+
+    if (_selectedLocation == null) {
+      showToast(message: 'Por favor, selecciona una ubicación en el mapa');
+      return;
+    }
+
+    // Validar coordenadas antes de enviar
+    if (_selectedLocation!.latitude < -90 || _selectedLocation!.latitude > 90) {
+      showToast(message: 'Latitud inválida. Debe estar entre -90 y 90');
+      return;
+    }
+
+    if (_selectedLocation!.longitude < -180 || _selectedLocation!.longitude > 180) {
+      showToast(message: 'Longitud inválida. Debe estar entre -180 y 180');
       return;
     }
 
@@ -101,12 +226,16 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
         return;
       }
 
-      final response = await plotServices.updatePlot(
+      print('Enviando actualización con coordenadas:');
+      print('Latitud: ${_selectedLocation!.latitude}');
+      print('Longitud: ${_selectedLocation!.longitude}');
+
+      final response = await _plotServices.updatePlot(
         plotId: _userPlot!.plot_id,
-        plotName: _plotNameController.text,
-        location: _locationController.text,
-        lat: _userPlot!.lat,
-        long: _userPlot!.long,
+        plotName: _plotNameController.text.trim(),
+        location: _locationController.text.trim(),
+        lat: _selectedLocation!.latitude,
+        long: _selectedLocation!.longitude,
         area: area,
       );
 
@@ -163,7 +292,7 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
       );
     }
 
-    if (_errorMessage.isNotEmpty) {
+    if (_errorMessage.isNotEmpty && _userPlot == null) {
       return Scaffold(
         backgroundColor: Colors.white,
         body: Center(
@@ -175,7 +304,7 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: Text(
-                  'Error: $_errorMessage',
+                  _errorMessage,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.grey.shade700,
@@ -214,7 +343,7 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 4),
                 child: LinearProgressIndicator(
-                  value: 1.0, // 100% de progreso
+                  value: 1.0,
                   backgroundColor: Colors.grey.shade200,
                   color: ColorsAgrosig.greenColor,
                   borderRadius: BorderRadius.circular(10),
@@ -356,13 +485,18 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
 
                     SizedBox(height: 20),
 
-                    // Campo Ubicación
+                    // Campo Localidad
                     _buildDetailField(
-                      label: 'Ubicación',
+                      label: 'Localidad',
                       icon: Icons.location_on_outlined,
                       controller: _locationController,
-                      hintText: 'Ubicación de la parcela',
+                      hintText: 'Localidad de la parcela',
                     ),
+
+                    SizedBox(height: 20),
+
+                    // Campo Ubicación en el Mapa
+                    _buildMapLocationField(),
 
                     SizedBox(height: 20),
 
@@ -516,6 +650,109 @@ class _FinishSetupPlotState extends State<FinishSetupPlot> {
               fontSize: 15,
               color: Colors.grey.shade800,
               fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMapLocationField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: ColorsAgrosig.greenColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.map_outlined, color: ColorsAgrosig.greenColor, size: 18),
+            ),
+            SizedBox(width: 10),
+            Text(
+              'Ubicación en el Mapa',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        GestureDetector(
+          onTap: _selectLocation,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
+              color: Colors.grey.shade50,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  color: _selectedLocation != null ? ColorsAgrosig.greenColor : Colors.grey,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _coordinatesText,
+                        style: TextStyle(
+                          color: _selectedLocation != null ? Colors.grey.shade800 : Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (_isGettingAddress) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(ColorsAgrosig.greenColor),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Obteniendo dirección...',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                _isGettingAddress
+                    ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(ColorsAgrosig.greenColor),
+                  ),
+                )
+                    : Icon(
+                  Icons.chevron_right,
+                  color: Colors.grey.shade500,
+                  size: 24,
+                ),
+              ],
             ),
           ),
         ),
