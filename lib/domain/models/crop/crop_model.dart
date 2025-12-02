@@ -41,7 +41,7 @@ class Crop {
           ? DateTime.parse(json['harvest_date'])
           : null,
       isActive: json['is_active'] ?? true,
-      costTotal: _parseCostTotal(json['cost_total']), // CORREGIDO
+      costTotal: _parseCostTotal(json['cost_total']),
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       plotName: json['plot_name'],
@@ -77,13 +77,19 @@ class Crop {
 
   // Para crear nuevo cultivo (sin ID)
   Map<String, dynamic> toCreateJson() {
-    return {
+    final map = <String, dynamic>{
       'crop_type': cropType,
       'crop_variety': cropVariety,
       'planting_date': plantingDate?.toIso8601String(),
       'harvest_date': harvestDate?.toIso8601String(),
-      'plot_id': plotId,
     };
+
+    // Solo incluir plot_id si es mayor a 0
+    if (plotId > 0) {
+      map['plot_id'] = plotId;
+    }
+
+    return map;
   }
 
   // Para actualizar cultivo

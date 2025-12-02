@@ -87,14 +87,14 @@ class _CreateCropScreenState extends State<CreateCropScreen> {
       final newCrop = Crop(
         cropId: 0,
         userId: 0,
-        plotId: 1, // Por defecto
+        plotId: 0,
         cropType: _typeController.text,
         cropVariety: _varietyController.text,
         plantingDate: _plantingDateController.text.isNotEmpty
-            ? _parseDate(_plantingDateController.text)
+            ? DateTime.parse(_formatDateForBackend(_plantingDateController.text))
             : null,
         harvestDate: _harvestDateController.text.isNotEmpty
-            ? _parseDate(_harvestDateController.text)
+            ? DateTime.parse(_formatDateForBackend(_harvestDateController.text))
             : null,
         isActive: true,
         costTotal: 0.0,
