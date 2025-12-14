@@ -4,14 +4,30 @@ Aplicación móvil desarrollada en Flutter para la gestión agrícola inteligent
 
 ## 📱 Características Principales
 
-- 🗺️ **Gestión de Parcelas**: Administración y monitoreo de terrenos agrícolas con geolocalización
-- 📊 **Trazabilidad**: Sistema de QR para seguimiento de lotes de producción
-- 🔐 **Autenticación Segura**: Login con Google y Firebase Authentication
-- 📍 **Geolocalización**: Integración con Google Maps para ubicación de parcelas
-- 📱 **Notificaciones Push**: Alertas en tiempo real para actividades agrícolas
-- 🤖 **IA Agrícola**: Procesamiento de imágenes con Google ML Kit y Gemini IA de Chatbot
-- 📈 **Análisis de Datos**: Gráficos y reportes de producción
-- 💾 **Almacenamiento Seguro**: Firebase Firestore y almacenamiento local encriptado
+### 🗺️ Gestión de Parcelas  
+- Registro y edición de parcelas con geolocalización precisa  
+- Integración con Google Maps para visualización y delimitación  
+- Seguimiento de áreas y coordenadas exactas  
+  
+### 📊 Control de Actividades  
+- Registro detallado de operaciones agrícolas  
+- Seguimiento de tareas y cronograma de actividades  
+- Historial completo de operaciones por parcela  
+  
+### 📄 Reportes PDF  
+- Generación de reportes personalizados  
+- Exportación de datos de producción y actividades  
+- Documentación profesional para análisis  
+  
+### 🤖 Asistente IA con Gemini  
+- Asistente inteligente para consultas agrícolas  
+- Recomendaciones basadas en datos del cultivo  
+- Soporte para toma de decisiones  
+  
+### 🔔 Notificaciones Push  
+- Alertas importantes sobre actividades  
+- Recordatorios programados  
+- Actualizaciones en tiempo real  
 
 ## 🛠️ Tecnologías Utilizadas
 
